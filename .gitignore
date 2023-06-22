@@ -70,3 +70,7 @@ Release
 CMakeFiles
 CMakeCache.txt
 cmake_install.cmake
+/cmake-build-release
+/.idea
+/CMakeSettings.json
+/CMakePresets.json
