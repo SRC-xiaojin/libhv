@@ -49,6 +49,9 @@ public:
     }
 
     int createsocket(struct sockaddr* remote_addr) {
+        if (remote_addr == NULL) {
+            return -1;
+        }
         int connfd = ::socket(remote_addr->sa_family, SOCK_STREAM, 0);
         // SOCKADDR_PRINT(remote_addr);
         if (connfd < 0) {
@@ -59,7 +62,7 @@ public:
         hio_t* io = hio_get(loop_->loop(), connfd);
         assert(io != NULL);
         hio_set_peeraddr(io, remote_addr, SOCKADDR_LEN(remote_addr));
-        channel.reset(new TSocketChannel(io));
+        channel = std::make_shared<TSocketChannel>(io);
         return connfd;
     }
 
@@ -74,7 +77,7 @@ public:
     }
 
     int bind(struct sockaddr* local_addr) {
-        if (channel == NULL || channel->isClosed() || local_addr ==NULL) {
+        if (channel == NULL || channel->isClosed() || local_addr == NULL) {
             return -1;
         }
         int ret = ::bind(channel->fd(), local_addr, SOCKADDR_LEN(local_addr));
