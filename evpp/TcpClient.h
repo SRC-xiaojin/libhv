@@ -74,7 +74,7 @@ public:
     }
 
     int bind(struct sockaddr* local_addr) {
-        if (channel == NULL || channel->isClosed()) {
+        if (channel == NULL || channel->isClosed() || local_addr ==NULL) {
             return -1;
         }
         int ret = ::bind(channel->fd(), local_addr, SOCKADDR_LEN(local_addr));
@@ -204,7 +204,12 @@ public:
     }
 
     void setConnectTimeout(int ms) {
-        connect_timeout = ms;
+        if (ms > 0) {
+            connect_timeout = ms;
+        }
+        else {
+            hlogw("ms should be positive num");
+        }
     }
 
     void setReconnect(reconn_setting_t* setting) {
