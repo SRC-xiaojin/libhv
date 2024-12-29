@@ -163,7 +163,7 @@ const std::string& HUrl::dump() {
         if (port != 80 && port != 443) {
             char buf[16] = {0};
             snprintf(buf, sizeof(buf), ":%d", port);
-            url += port;
+            url += buf;
         }
     }
     // /path
@@ -181,4 +181,26 @@ const std::string& HUrl::dump() {
         url += fragment;
     }
     return url;
+}
+
+namespace hv {
+
+std::string escapeHTML(const std::string& str)  {
+    std::string ostr;
+    const char* p = str.c_str();
+    while (*p != '\0') {
+        switch (*p) {
+            case '<':   ostr += "&lt;";     break;
+            case '>':   ostr += "&gt;";     break;
+            case '&':   ostr += "&amp;";    break;
+            case '\"':  ostr += "&quot;";   break;
+            case '\'':  ostr += "&apos;";   break;
+         // case ' ':   ostr += "&nbsp;";   break;
+            default:    ostr += *p;         break;
+        }
+        ++p;
+    }
+    return ostr;
+}
+
 }

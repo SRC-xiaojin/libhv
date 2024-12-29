@@ -38,7 +38,7 @@ public:
         if (io == NULL) return -1;
         this->remote_host = remote_host;
         this->remote_port = remote_port;
-        channel.reset(new TSocketChannel(io));
+        channel = std::make_shared<TSocketChannel>(io);
         int sockfd = channel->fd();
         if (hv_strendswith(remote_host, ".255")) {
             udp_broadcast(sockfd, 1);
@@ -60,6 +60,7 @@ public:
         if (ret != 0) {
             perror("bind");
         }
+        hio_set_localaddr(channel->io(), &local_addr.sa, SOCKADDR_LEN(&local_addr));
         return ret;
     }
 

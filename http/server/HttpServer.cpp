@@ -96,7 +96,7 @@ static void loop_thread(void* userdata) {
     http_server_t* server = (http_server_t*)userdata;
     HttpService* service = server->service;
 
-    EventLoopPtr loop(new EventLoop);
+    auto loop = std::make_shared<EventLoop>();
     hloop_t* hloop = loop->loop();
     // http
     if (server->listenfd[0] >= 0) {
@@ -163,6 +163,13 @@ static void loop_thread(void* userdata) {
     hlogi("EventLoop stopped, pid=%ld tid=%ld", hv_getpid(), hv_gettid());
 }
 
+/* @workflow:
+ * http_server_run -> Listen -> master_workers_run / hthread_create ->
+ * loop_thread -> accept -> EventLoop::run ->
+ * on_accept -> new HttpHandler -> hio_read ->
+ * on_recv -> HttpHandler::FeedRecvData ->
+ * on_close -> delete HttpHandler
+ */
 int http_server_run(http_server_t* server, int wait) {
     // http_port
     if (server->port > 0) {
@@ -196,7 +203,7 @@ int http_server_run(http_server_t* server, int wait) {
     HttpServerPrivdata* privdata = new HttpServerPrivdata;
     server->privdata = privdata;
     if (server->service == NULL) {
-        privdata->service.reset(new HttpService);
+        privdata->service = std::make_shared<HttpService>();
         server->service = privdata->service.get();
     }
 
@@ -218,6 +225,9 @@ int http_server_run(http_server_t* server, int wait) {
     }
 }
 
+/* @workflow:
+ * http_server_stop -> EventLoop::stop -> hthread_join
+ */
 int http_server_stop(http_server_t* server) {
     HttpServerPrivdata* privdata = (HttpServerPrivdata*)server->privdata;
     if (privdata == NULL) return 0;
@@ -267,4 +277,35 @@ int http_server_stop(http_server_t* server) {
     delete privdata;
     server->privdata = NULL;
     return 0;
+}
+
+namespace hv {
+
+std::shared_ptr<hv::EventLoop> HttpServer::loop(int idx) {
+    HttpServerPrivdata* privdata = (HttpServerPrivdata*)this->privdata;
+    if (privdata == NULL) return NULL;
+    std::lock_guard<std::mutex> locker(privdata->mutex_);
+    if (privdata->loops.empty()) return NULL;
+    if (idx >= 0 && idx < (int)privdata->loops.size()) {
+        return privdata->loops[idx];
+    }
+    EventLoop* cur = currentThreadEventLoop;
+    for (auto& loop : privdata->loops) {
+        if (loop.get() == cur) return loop;
+    }
+    return NULL;
+}
+
+size_t HttpServer::connectionNum() {
+    HttpServerPrivdata* privdata = (HttpServerPrivdata*)this->privdata;
+    if (privdata == NULL) return 0;
+    std::lock_guard<std::mutex> locker(privdata->mutex_);
+    if (privdata->loops.empty()) return 0;
+    size_t total = 0;
+    for (auto& loop : privdata->loops) {
+        total += loop->connectionNum;
+    }
+    return total;
+}
+
 }

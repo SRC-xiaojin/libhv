@@ -2,7 +2,7 @@
 
 - base: cross platfrom infrastructure
 - event: select/poll/epoll/wepoll/kqueue/port
-- ssl: openssl/guntls/mbedtls
+- ssl: openssl/gnutls/mbedtls/wintls/appletls
 - rudp: KCP
 - evpp: c++ EventLoop interface similar to muduo and evpp
 - http client/server: include https http1/x http2
@@ -11,10 +11,8 @@
 
 ## Improving
 
-- wintls: SChannel is so hard :) need help
 - Path router: optimized matching via trie?
 - FileCache use LRUCache
-- HTTP TrustProxies
 
 ## Plan
 

@@ -8,6 +8,11 @@ int main(int argc, char* argv[]) {
     assert(hv_getboolean("1"));
     assert(hv_getboolean("yes"));
 
+    assert(hv_wildcard_match("www.example.com", "www.example.com"));
+    assert(hv_wildcard_match("www.example.com", "*.example.com"));
+    assert(hv_wildcard_match("www.example.com", "www.*.com"));
+    assert(hv_wildcard_match("www.example.com", "www.example.*"));
+
     assert(hv_parse_size("256") == 256);
     assert(hv_parse_size("1K") == 1024);
     assert(hv_parse_size("1G2M3K4B") ==
@@ -25,6 +30,7 @@ int main(int argc, char* argv[]) {
             4);
 
     const char* test_urls[] = {
+        "http://user:pswd@[www.example.com]:80/path?query#fragment",
         "http://user:pswd@www.example.com:80/path?query#fragment",
         "http://user:pswd@www.example.com/path?query#fragment",
         "http://www.example.com/path?query#fragment",

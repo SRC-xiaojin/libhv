@@ -114,7 +114,7 @@ public:
                 return;
             }
             // Response::ParseFromArray
-            protorpc::ResponsePtr res(new protorpc::Response);
+            auto res = std::make_shared<protorpc::Response>();
             if (!res->ParseFromArray(msg.body, msg.head.length)) {
                 return;
             }
@@ -122,6 +122,7 @@ public:
             calls_mutex.lock();
             auto iter = calls.find(res->id());
             if (iter == calls.end()) {
+                calls_mutex.unlock();
                 return;
             }
             auto ctx = iter->second;
@@ -145,9 +146,11 @@ public:
         static std::atomic<uint64_t> s_id = ATOMIC_VAR_INIT(0);
         req->set_id(++s_id);
         req->id();
-        auto ctx = new protorpc::ProtoRpcContext;
+        auto ctx = std::make_shared<protorpc::ProtoRpcContext>();
         ctx->req = req;
-        calls[req->id()] = protorpc::ContextPtr(ctx);
+        calls_mutex.lock();
+        calls[req->id()] = ctx;
+        calls_mutex.unlock();
         // Request::SerializeToArray + protorpc_pack
         protorpc_message msg;
         protorpc_message_init(&msg);
@@ -177,7 +180,7 @@ public:
     }
 
     int calc(const char* method, int num1, int num2, int& out) {
-        protorpc::RequestPtr req(new protorpc::Request);
+        auto req = std::make_shared<protorpc::Request>();
         // method
         req->set_method(method);
         // params
@@ -199,7 +202,7 @@ public:
     }
 
     int login(const protorpc::LoginParam& param, protorpc::LoginResult* result) {
-        protorpc::RequestPtr req(new protorpc::Request);
+        auto req = std::make_shared<protorpc::Request>();
         // method
         req->set_method("login");
         // params
